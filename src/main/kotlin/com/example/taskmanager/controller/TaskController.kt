@@ -13,28 +13,35 @@ class TaskController(private val taskRepository: TaskRepository) {
     @GetMapping("/tasks")
     fun findAll() = taskRepository.findAll()
 
-
     // Добавление задачи
     @PostMapping("/task")
-    fun addNewTask(@RequestBody newTask: Task): Task =
-        taskRepository.save(newTask)
+    fun addNewTask(@Valid @RequestBody newTask: Task): Task =
+            taskRepository.save(newTask)
 
     // Изменение задачи
     @PostMapping("/task/{id}")
-    fun updateTag(@PathVariable id: Long, @Valid @RequestBody updatedTask: Task): ResponseEntity<Task> {
-        return taskRepository.findById(id).map {existingTask ->
-            val newTask: Task = existingTask.copy(name = updatedTask.name, description = updatedTask.description,
-                    taskDate = updatedTask.taskDate, tagId = updatedTask.tagId)
-            ResponseEntity.ok().body(taskRepository.save(newTask))
-        }.orElse(ResponseEntity.notFound().build())
+    fun updateTag(@PathVariable id: Long, @Valid @RequestBody updatedTask: Task): ResponseEntity<String> {
+        if (!taskRepository.existsById(id))
+            throw Exception()
+        else {
+            val newTask = taskRepository.findById(id).get().copy(
+                    name = updatedTask.name,
+                    description = updatedTask.description,
+                    taskDate = updatedTask.taskDate,
+                    tagId = updatedTask.tagId)
+            taskRepository.save(newTask)
+            return ResponseEntity.ok().body("Task Updated")
+        }
     }
 
     // Удаление задачи
     @DeleteMapping("/task/{id}")
-    fun deleteTask(@PathVariable id : Long) : ResponseEntity<Void> {
-        return taskRepository.findById(id).map {
-            taskRepository.delete(it)
-            ResponseEntity<Void>(HttpStatus.OK)
-        }.orElse(ResponseEntity.notFound().build())
+    fun deleteTask(@PathVariable id : Long) : ResponseEntity<String> {
+        if (!taskRepository.existsById(id))
+            throw Exception()
+        else {
+            taskRepository.deleteById(id)
+            return ResponseEntity.ok().body("Task Deleted")
+        }
     }
 }
