@@ -1,26 +1,26 @@
 package com.example.taskmanager
 
+import com.example.taskmanager.exceptions.AlreadyExistsException
+import com.example.taskmanager.exceptions.NotFoundException
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseBody
-import org.springframework.web.bind.annotation.ResponseStatus
-import java.io.IOException
 import org.springframework.web.bind.annotation.RestControllerAdvice
-
+import java.util.*
 
 @RestControllerAdvice
 class RestExceptionHandler {
-    @ExceptionHandler(MethodArgumentNotValidException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+
+    @ExceptionHandler(NotFoundException::class)
     @ResponseBody
-    fun badRequest(ex: MethodArgumentNotValidException ): Response {
-        return Response(HttpStatus.BAD_REQUEST.value(), ex.message)
+    fun notFoundException(ex: NotFoundException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity(ErrorResponse(Date(),HttpStatus.NOT_FOUND.value(), ex.message), HttpStatus.NOT_FOUND)
     }
 
-    @ExceptionHandler(Exception::class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun unKnownException(ex: Exception): Response {
-        return Response(HttpStatus.NOT_FOUND.value(), "Not Found")
+    @ExceptionHandler(AlreadyExistsException::class)
+    @ResponseBody
+    fun alreadyExistsException(ex: AlreadyExistsException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity(ErrorResponse(Date(),HttpStatus.CONFLICT.value(), ex.message), HttpStatus.CONFLICT)
     }
 }
