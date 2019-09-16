@@ -1,5 +1,7 @@
 package com.example.taskmanager.model
 
+import org.hibernate.annotations.OnDelete
+import org.hibernate.annotations.OnDeleteAction
 import java.time.LocalDate
 import javax.persistence.*
 import javax.validation.constraints.NotBlank
@@ -21,9 +23,8 @@ data class Task(
         @NotNull(message = "task_date must not be empty")
         val taskDate: LocalDate?,
 
-        @Column(name="tag_id")
-        @NotNull(message = "tag_id must not be empty")
-        val tagId: Long = 0,
+        @Column(name="tag")
+        val tag: Long,
 
         @Id
         @GeneratedValue(strategy = GenerationType.AUTO)

@@ -1,5 +1,7 @@
 package com.example.taskmanager.model
 
+import org.hibernate.annotations.OnDelete
+import org.hibernate.annotations.OnDeleteAction
 import javax.persistence.*
 import javax.validation.constraints.NotBlank
 
@@ -12,5 +14,8 @@ data class Tag(
 
         @Id
         @GeneratedValue(strategy = GenerationType.AUTO)
-        val id: Long = 0
+        val id: Long = 0,
+
+        @OneToMany(cascade = [CascadeType.ALL], fetch = FetchType.LAZY, mappedBy = "tag")
+        val tasks: MutableList<Task> = mutableListOf<Task>()
 )
