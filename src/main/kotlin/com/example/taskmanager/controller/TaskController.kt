@@ -1,6 +1,7 @@
 package com.example.taskmanager.controller
 
-import com.example.taskmanager.Response
+import com.example.taskmanager.exceptions.AlreadyExistsException
+import com.example.taskmanager.exceptions.NotFoundException
 import com.example.taskmanager.model.Task
 import com.example.taskmanager.repo.TaskRepository
 import org.springframework.http.HttpStatus
@@ -13,28 +14,43 @@ class TaskController(private val taskRepository: TaskRepository) {
 
     @GetMapping("/tasks")
     @ResponseBody
-    fun findAll() = taskRepository.findAll()
+    fun getAllTags():ResponseEntity<List<Task>> {
+        val allTasks : List<Task> = taskRepository.findAll()
+        if (allTasks.isEmpty())
+            throw NotFoundException("Tasks not found")
+        else
+            return ResponseEntity(taskRepository.findAll(), HttpStatus.OK)
+    }
 
     // Добавление задачи
     @PostMapping("/task")
     @ResponseBody
-    fun addNewTask(@Valid @RequestBody newTask: Task): Task =
+    fun addNewTask(@Valid @RequestBody newTask: Task): ResponseEntity<Void> {
+        if (taskRepository.existsByName(newTask.name))
+            throw AlreadyExistsException("Task with name '${newTask.name}' already exists")
+        else {
             taskRepository.save(newTask)
+            return ResponseEntity(HttpStatus.CREATED)
+        }
+    }
 
     // Изменение задачи
     @PostMapping("/task/{id}")
     @ResponseBody
-    fun updateTask(@PathVariable id: Long, @Valid @RequestBody updatedTask: Task): Response {
-        if (!taskRepository.existsById(id))
-            throw Exception()
-        else {
-            val newTask = taskRepository.findById(id).get().copy(
-                    name = updatedTask.name,
-                    description = updatedTask.description,
-                    taskDate = updatedTask.taskDate,
-                    tagId = updatedTask.tagId)
-            taskRepository.save(newTask)
-            return Response(HttpStatus.OK.value(), "Task $id updated")
+    fun updateTask(@PathVariable id: Long, @Valid @RequestBody newTask: Task): ResponseEntity<Task> {
+        val updatedTask=taskRepository.findById(id).orElse(null)
+        when {
+            updatedTask==null -> throw NotFoundException("Task with id=$id not found")
+            taskRepository.existsByName(newTask.name) -> throw AlreadyExistsException("Task with name '${newTask.name}' already exists")
+            else -> {
+                updatedTask.copy(
+                        name = newTask.name,
+                        description = newTask.description,
+                        taskDate = newTask.taskDate,
+                        tag = newTask.tag)
+                taskRepository.save(updatedTask)
+                return ResponseEntity(updatedTask, HttpStatus.OK)
+            }
         }
     }
 
@@ -42,12 +58,13 @@ class TaskController(private val taskRepository: TaskRepository) {
     // Удаление задачи
     @DeleteMapping("/task/{id}")
     @ResponseBody
-    fun deleteTask(@PathVariable id : Long) : Response {
-        if (!taskRepository.existsById(id))
-            throw Exception()
+    fun deleteTask(@PathVariable id : Long) : ResponseEntity<Task> {
+        val curTask=taskRepository.findById(id).orElse(null)
+        if (curTask==null)
+            throw NotFoundException("Task with id=$id not found")
         else {
             taskRepository.deleteById(id)
-            return Response(HttpStatus.OK.value(),"Task $id Deleted")
+            return ResponseEntity(HttpStatus.NO_CONTENT)
         }
     }
 }
